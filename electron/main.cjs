@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
 let pendingFilePath = null; // File path passed via CLI (e.g. double-click on .tramado)
@@ -104,6 +105,11 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     pendingFilePath = extractFilePath(process.argv);
     createWindow(pendingFilePath);
+
+    // ── Check for updates ──
+    if (!process.argv.includes('--dev')) {
+      autoUpdater.checkForUpdatesAndNotify();
+    }
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow(null);
