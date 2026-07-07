@@ -12,7 +12,7 @@ export const HelpDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
             <h3 style={{ margin: 0, color: 'var(--accent)', fontSize: 20 }}>Tramado — Pattern Studio</h3>
-            <p style={{ margin: '5px 0', fontSize: 12, color: 'var(--text-3)' }}>Versión 1.3.0 | Año de Desarrollo: 2026</p>
+            <p style={{ margin: '5px 0', fontSize: 12, color: 'var(--text-3)' }}>Versión 1.3.2 | Año de Desarrollo: 2026</p>
             <p style={{ margin: '5px 0', fontSize: 13, fontWeight: 'bold' }}>Idea General: Carolina Campos | Desarrollador: Patricio Campos</p>
           </div>
 
