@@ -354,7 +354,8 @@ export const HomeScreen: React.FC<HomeProps> = ({ onEnter }) => {
       </div>
 
       <div style={{ marginTop: 'auto', paddingBottom: 20, textAlign: 'center', fontSize: 11, color: 'var(--text-3)' }}>
-        Tramado v1.3.2 — Desarrollado por <b>Patricio Campos</b>
+        {/* @ts-ignore */}
+        Tramado v{__APP_VERSION__} — Desarrollado por <b>Patricio Campos</b>
       </div>
 
       {showNew && <NewProjectDlg initialCraft={initCraft} onClose={() => setShowNew(false)} onCreated={onEnter} />}
