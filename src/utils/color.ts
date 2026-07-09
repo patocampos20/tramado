@@ -1,7 +1,6 @@
 import { ColorEntry } from '../types';
 
-export const SYMBOLS = ['·', '×', '○', '●', '◆', '◇', '▲', '△', '■', '□', '★', '☆',
-  'T', 'V', 'Λ', '+', '/', '\\', '─', '|', '~', 'S', 'Z', 'N', 'M'];
+export const SYMBOLS = ['■', '□', '▲', '▼', '●', '○', '◆', '◇', '✖', '＋', '★', '✳', '│', '─'];
 
 let _c = 0;
 export function uid(): string {
@@ -23,7 +22,8 @@ export function luminance(hex: string) {
 export function contrastFor(hex: string) { return luminance(hex) > 0.3 ? '#1a1a1a' : '#ffffff'; }
 
 export function makeColor(hex: string, name: string, symbolIdx = 0): ColorEntry {
-  return { id: uid(), hex, name, symbol: SYMBOLS[symbolIdx % SYMBOLS.length], symbolColor: contrastFor(hex), count: 0 };
+  const initials = name.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase()).join('').substring(0, 3);
+  return { id: uid(), hex, name, symbol: SYMBOLS[symbolIdx % SYMBOLS.length], symbolColor: contrastFor(hex), initials, count: 0 };
 }
 
 // Default starter palette (craft-friendly, no neon game colors)

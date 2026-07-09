@@ -1,5 +1,5 @@
 # Manual y Documentación Técnica: Tramado (Pattern Studio)
-**Versión:** 1.3.0  
+**Versión:** 1.3.4  
 **Idea General:** Carolina Campos  
 **Desarrollador:** Patricio Campos  
 **Año de Desarrollo:** 2026  
@@ -89,9 +89,9 @@ A pesar de ser una herramienta altamente funcional en su versión 1.0.0, a nivel
 
 ---
 
-## 7. Registro de Actualizaciones (Novedades en v1.3.0)
+## 7. Registro de Actualizaciones (Novedades en v1.3.4)
 
-La versión 1.3.0 trae avances sustanciales en el empaquetado del software, la interoperabilidad con Windows y la estabilización de los motores de renderizado y exportación:
+La versión 1.3.4 trae avances sustanciales en el empaquetado del software, la interoperabilidad con Windows y la estabilización de los motores de renderizado y exportación:
 
 * **Instalador Profesional (Inno Setup / NSIS):** Tramado ahora se distribuye con un instalador `Setup.exe` limpio para Windows.
 * **Asociación Nativa de Archivos:** Se ha integrado a nivel de sistema operativo la extensión `.tramado`. Ahora, hacer doble clic en cualquier archivo `.tramado` desde el Explorador de Archivos abrirá la aplicación directamente y cargará el proyecto (incluso si la app ya estaba ejecutándose en segundo plano).

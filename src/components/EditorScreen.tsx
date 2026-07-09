@@ -45,7 +45,7 @@ const GridCanvas: React.FC = () => {
   const selection = useStore(s => s.selection);
 
   const { paintCell, eraseCell, fillFlood, fillGlobal, placeSymbol, pushSnap, setZoom, pan, setCursor, setSelection, setActiveColor, rasterizeText } = useStore();
-  const { cols, rows, cellSize, showGrid, gridColor, bgColor, gaugeW, gaugeH, showSymbols, mirrorH, mirrorV, showRowNumbers } = project.canvas;
+  const { cols, rows, cellSize, showGrid, gridColor, bgColor, gaugeW, gaugeH, showSymbols, cellRenderMode, mirrorH, mirrorV, showRowNumbers } = project.canvas;
 
   let vx = viewport.x;
   let vy = viewport.y;
@@ -286,12 +286,23 @@ const GridCanvas: React.FC = () => {
                 stroke="rgba(0,0,0,0.15)" strokeWidth={cw > 5 ? 0.5 : 0} opacity={opacity} />
         );
         
-        if (showSymbols && ch > 8 && cw > 8) {
+        const renderMode = cellRenderMode || (showSymbols ? 'symbols' : 'color');
+        
+        if ((renderMode === 'symbols' || renderMode === 'color+symbols') && ch > 8 && cw > 8) {
           symbolTexts.push(
             <text key={`s${c}-${r}-${color.id}-${opacity}`} x={x + cw/2} y={y + ch/2} fill={color.symbolColor}
               fontSize={Math.min(cw, ch) * 0.7} textAnchor="middle" dominantBaseline="central" pointerEvents="none"
               fontFamily="'JetBrains Mono', monospace" fontWeight="600" opacity={opacity}>
               {color.symbol}
+            </text>
+          );
+        } else if (renderMode === 'initials' && ch > 8 && cw > 8) {
+          const initText = color.initials || color.name.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase()).join('').substring(0, 3);
+          symbolTexts.push(
+            <text key={`i${c}-${r}-${color.id}-${opacity}`} x={x + cw/2} y={y + ch/2} fill={color.symbolColor}
+              fontSize={Math.min(cw, ch) * 0.45} textAnchor="middle" dominantBaseline="central" pointerEvents="none"
+              fontFamily="'JetBrains Mono', monospace" fontWeight="600" opacity={opacity}>
+              {initText}
             </text>
           );
         }
@@ -566,36 +577,48 @@ const ColorEditorDialog: React.FC<{
 
   if (!draft) return null;
 
+  const [hideModal, setHideModal] = useState(false);
+
   const handleSave = () => {
     if (colorId === 'new') {
       const idx = project.colors.length;
       const c = makeColor(draft.hex, draft.name, idx);
       c.symbol = draft.symbol;
       c.symbolColor = draft.symbolColor;
-      project.colors.push(c);
-      store.setActiveColor(c.id);
+      if (draft.initials) c.initials = draft.initials;
+      
+      // Use store's update hook to trigger re-render
+      useStore.setState(s => {
+        s.project.colors.push(c);
+        s.activeColorId = c.id;
+      });
     } else {
       updateColor(colorId, draft);
     }
     onClose();
   };
 
-  const handleEyeDropper = async () => {
+  const handleEyeDropper = () => {
     if (!('EyeDropper' in window)) {
       alert("Tu navegador no soporta el cuentagotas global.");
       return;
     }
-    try {
-      const eyeDropper = new (window as any).EyeDropper();
-      const result = await eyeDropper.open();
-      setDraft({ ...draft, hex: result.sRGBHex, symbolColor: contrastFor(result.sRGBHex) });
-    } catch(e) {
-      // User canceled
-    }
+    setHideModal(true);
+    setTimeout(async () => {
+      try {
+        const eyeDropper = new (window as any).EyeDropper();
+        const result = await eyeDropper.open();
+        setDraft((d: any) => ({ ...d, hex: result.sRGBHex, symbolColor: contrastFor(result.sRGBHex) }));
+      } catch(e) {
+        // User canceled
+      } finally {
+        setHideModal(false);
+      }
+    }, 50);
   };
 
   return (
-    <div className="overlay" onClick={onClose}>
+    <div className="overlay" onClick={onClose} style={{ visibility: hideModal ? 'hidden' : 'visible' }}>
       <div className="dlg dlg-sm" onClick={e => e.stopPropagation()}>
         <div className="dlg-header">
           <h2>Editar {tab === 'color' ? 'color' : 'símbolo'}</h2>
@@ -634,7 +657,14 @@ const ColorEditorDialog: React.FC<{
           {tab === 'symbol' && (
             <>
               <div className="form-group">
-                <label className="form-label">Elegir símbolo</label>
+                <label className="form-label">Iniciales (máx 3 letras)</label>
+                <input className="form-input" maxLength={3} 
+                       value={draft.initials || ''} 
+                       onChange={e => setDraft({ ...draft, initials: e.target.value.toUpperCase() })} 
+                       placeholder={draft.name ? draft.name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase()).join('').substring(0, 3) : ''} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Elegir símbolo gráfico</label>
                 <div className="symbol-grid">
                   {SYMBOLS.map(sym => (
                     <div key={sym} className={`sym-btn ${draft.symbol === sym ? 'sel' : ''}`} onClick={() => setDraft({ ...draft, symbol: sym })}>
@@ -1079,6 +1109,74 @@ const WrittenInstructionsDialog: React.FC<{ onClose: () => void }> = ({ onClose 
     const lines = [];
     const { tipo_tejido, direccion_filas, direccion_columnas, startRow } = p.canvas;
     
+    if (p.craft === 'crochet_c2c') {
+      let displayR = 1;
+      const W = p.canvas.cols;
+      const H = p.canvas.rows;
+      let prevCount = 0;
+
+      for (let d = 0; d < W + H - 1; d++) {
+        const counts: { color: string, count: number }[] = [];
+        let hasColor = false;
+        let blockCount = 0;
+
+        for (let i = 0; i <= d; i++) {
+          let cp = (d % 2 === 0) ? i : (d - i);
+          let rp = (d % 2 === 0) ? (d - i) : i;
+
+          if (cp < W && rp < H) {
+            const c = W - 1 - cp;
+            const r = H - 1 - rp;
+
+            let colorId = undefined;
+            if (p.layers && p.layers.length > 0) {
+              for (let l = p.layers.length - 1; l >= 0; l--) {
+                if (p.layers[l].visible && p.layers[l].cells[`${c},${r}`]) {
+                  colorId = p.layers[l].cells[`${c},${r}`];
+                  break;
+                }
+              }
+            }
+            if (!colorId) colorId = p.cells[`${c},${r}`];
+
+            if (colorId) {
+              hasColor = true;
+              const colorObj = p.colors.find(x => x.id === colorId);
+              const colorName = colorObj?.name || 'Color Desconocido';
+              if (counts.length > 0 && counts[counts.length - 1].color === colorName) {
+                counts[counts.length - 1].count++;
+              } else {
+                counts.push({ color: colorName, count: 1 });
+              }
+            }
+            blockCount++;
+          }
+        }
+
+        if (hasColor) {
+          let prefix = "";
+          if (prevCount > 0) {
+            if (blockCount > prevCount) prefix = `<span style="color:var(--green);font-size:11px;padding-right:6px">(Aumento)</span>`;
+            else if (blockCount < prevCount) prefix = `<span style="color:var(--amber);font-size:11px;padding-right:6px">(Disminución)</span>`;
+          }
+          prevCount = blockCount;
+
+          const formattedCounts = counts.map(x => `<span style="color:var(--text-2)">${x.color}</span> <b>${x.count}</b> bloques`).join(', ');
+          
+          lines.push(
+            <div key={`c2c-${d}`} className="instr-row" style={{ fontSize: 13, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--border)', lineHeight: 1.5 }}>
+              <b style={{ display: 'inline-block', width: 65, color: 'var(--accent)' }}>Vta {displayR}</b> 
+              <span style={{ color: 'var(--text-3)', fontSize: 11, marginRight: 10 }}>{(d % 2 === 0) ? '(↗)' : '(↙)'}</span>
+              <span dangerouslySetInnerHTML={{ __html: prefix + formattedCounts }} />.
+            </div>
+          );
+          displayR++;
+        }
+      }
+      return lines.length ? lines : <div className="instr-row" style={{ padding: 20, textAlign: 'center', color: 'var(--text-3)' }}>El patrón está vacío. Dibuja en el lienzo para generar las instrucciones.</div>;
+    }
+
+    
     // Determine start and step based on direccion_filas
     const goUp = direccion_filas === 'BOTTOM_TO_TOP';
     const startIdx = goUp ? p.canvas.rows - 1 : 0;
@@ -1308,12 +1406,30 @@ const EditorScreen: React.FC<{ onHome: () => void }> = ({ onHome }) => {
   const { counts, totalPainted } = useMemo(() => {
     const c: Record<string, number> = {};
     let total = 0;
-    for (const v of Object.values(p.cells)) {
-      c[v] = (c[v] || 0) + 1;
-      total++;
+    
+    const getEffectiveCellColor = (col: number, row: number) => {
+      if (p.layers && p.layers.length > 0) {
+        for (let l = p.layers.length - 1; l >= 0; l--) {
+          if (p.layers[l].visible && p.layers[l].cells[`${col},${row}`]) {
+            return p.layers[l].cells[`${col},${row}`];
+          }
+        }
+      }
+      return p.cells[`${col},${row}`];
+    };
+
+    for (let r = 0; r < p.canvas.rows; r++) {
+      for (let col = 0; col < p.canvas.cols; col++) {
+        const colorId = getEffectiveCellColor(col, r);
+        if (colorId) {
+          c[colorId] = (c[colorId] || 0) + 1;
+          total++;
+        }
+      }
     }
+    
     return { counts: c, totalPainted: total };
-  }, [p.cells]);
+  }, [p.cells, p.layers]);
 
   const [mergeColorId, setMergeColorId] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
@@ -1488,7 +1604,15 @@ const EditorScreen: React.FC<{ onHome: () => void }> = ({ onHome }) => {
                     try {
                       const colors = JSON.parse(re.target?.result as string);
                       if (Array.isArray(colors)) {
-                        colors.forEach(c => store.project.colors.push(c));
+                        useStore.setState(s => {
+                          const baseIdx = s.project.colors.length;
+                          colors.forEach((c: any, i: number) => {
+                            if (c.hex && c.name) {
+                              const newC = makeColor(c.hex, c.name, baseIdx + i);
+                              s.project.colors.push(newC);
+                            }
+                          });
+                        });
                       }
                     } catch (err) { alert('Archivo de paleta inválido'); }
                   };
@@ -1527,6 +1651,16 @@ const EditorScreen: React.FC<{ onHome: () => void }> = ({ onHome }) => {
             <div style={{ display: 'flex', gap: 4 }}>
               <button className={`mirror-btn ${store.showVectorGuides ? 'on' : ''}`} onClick={store.toggleVectorGuides} style={{ flex: 1, borderColor: store.showVectorGuides ? 'var(--accent)' : 'var(--border)' }}>{store.showVectorGuides ? '👁 Contorno ON' : '🚫 Contorno OFF'}</button>
               <button className="mirror-btn" onClick={store.clearVectorGuides} title="Borrar todos los contornos vectoriales">🗑 Limpiar</button>
+            </div>
+            <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+              <select className="form-input" style={{ flex: 1, fontSize: 11, padding: 4 }} 
+                      value={p.canvas.cellRenderMode || (p.canvas.showSymbols ? 'symbols' : 'color')}
+                      onChange={e => store.setCellRenderMode(e.target.value as any)}>
+                <option value="color">Modo A: Color</option>
+                <option value="initials">Modo B: Iniciales</option>
+                <option value="symbols">Modo C: Símbolos</option>
+                <option value="color+symbols">Modo D: Color + Símbolos</option>
+              </select>
             </div>
           </div>
         </div>
@@ -1588,9 +1722,17 @@ const EditorScreen: React.FC<{ onHome: () => void }> = ({ onHome }) => {
       {/* Statusbar */}
       {!zenMode && (
       <div className="statusbar">
-        <div className="statusbar-tool">Modo: {store.activeTool.toUpperCase()}</div>
-        <div className="statusbar-item">Col: <span>{store.cursorCol + 1}</span></div>
-        <div className="statusbar-item">Fila: <span>{p.canvas.rows - store.cursorRow}</span></div>
+        {store.trackerActive ? (
+          <div className="statusbar-tool" style={{ color: 'var(--accent)', fontWeight: 'bold' }}>
+            Modo: SEGUIDOR | Hilera {p.craft === 'crochet_c2c' ? 'C2C' : ''}: {p.craft === 'crochet_c2c' ? store.trackerRow + store.trackerCol + 1 : p.canvas.rows - store.trackerRow}
+          </div>
+        ) : (
+          <>
+            <div className="statusbar-tool">Modo: {store.activeTool.toUpperCase()}</div>
+            <div className="statusbar-item">Col: <span>{store.cursorCol + 1}</span></div>
+            <div className="statusbar-item">Fila: <span>{p.canvas.rows - store.cursorRow}</span></div>
+          </>
+        )}
         <div className="statusbar-spacer" />
         <div className="statusbar-item">Grid: <span style={{ cursor:'pointer' }} onClick={store.toggleGrid}>{p.canvas.showGrid ? 'ON' : 'OFF'}</span></div>
         <div className="statusbar-item">Filas #: <span style={{ cursor:'pointer' }} onClick={store.toggleRowNumbers}>{p.canvas.showRowNumbers ? 'ON' : 'OFF'}</span></div>

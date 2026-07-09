@@ -11,7 +11,7 @@ export interface TileDef {
 
 export async function exportTile(project: Project, tile: TileDef): Promise<string | null> {
   return new Promise(async (resolve) => {
-    const { gaugeW, gaugeH, showGrid, bgColor, showSymbols, showRowNumbers, showColNumbers, direccion_filas = 'BOTTOM_TO_TOP', direccion_columnas = 'RIGHT_TO_LEFT', startRow = 1, startCol = 1 } = project.canvas;
+    const { gaugeW, gaugeH, showGrid, bgColor, showSymbols, cellRenderMode, showRowNumbers, showColNumbers, direccion_filas = 'BOTTOM_TO_TOP', direccion_columnas = 'RIGHT_TO_LEFT', startRow = 1, startCol = 1 } = project.canvas;
     
     const cw = tile.cellSize * gaugeW;
     const ch = tile.cellSize * gaugeH;
@@ -61,18 +61,35 @@ export async function exportTile(project: Project, tile: TileDef): Promise<strin
         if (colorId) {
           const color = project.colors.find(x => x.id === colorId);
           if (color) {
-            ctx.fillStyle = color.hex;
+            const renderMode = cellRenderMode || (showSymbols ? 'symbols' : 'color');
+            const drawColor = renderMode === 'color' || renderMode === 'color+symbols';
+            const drawInitials = renderMode === 'initials';
+            const drawSymbols = renderMode === 'symbols' || renderMode === 'color+symbols';
+
+            if (drawColor) {
+              ctx.fillStyle = color.hex;
+            } else {
+              ctx.fillStyle = '#ffffff';
+            }
             ctx.fillRect(c * cw, r * ch, cw, ch);
-            ctx.strokeStyle = "rgba(0,0,0,0.15)";
-            ctx.lineWidth = 0.5;
+            
+            ctx.strokeStyle = drawColor ? "rgba(0,0,0,0.15)" : "#000000";
+            ctx.lineWidth = drawColor ? 0.5 : 1.0;
             ctx.strokeRect(c * cw, r * ch, cw, ch);
             
-            if (showSymbols && ch > 8 && cw > 8) {
-              ctx.fillStyle = color.symbolColor;
+            if (drawSymbols && ch > 8 && cw > 8) {
+              ctx.fillStyle = drawColor ? color.symbolColor : '#000000';
               ctx.font = `600 ${Math.min(cw, ch) * 0.7}px 'JetBrains Mono', monospace`;
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
               ctx.fillText(color.symbol, c * cw + cw/2, r * ch + ch/2);
+            } else if (drawInitials && ch > 8 && cw > 8) {
+              ctx.fillStyle = drawColor ? color.symbolColor : '#000000';
+              ctx.font = `600 ${Math.min(cw, ch) * 0.45}px 'JetBrains Mono', monospace`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              const initText = color.initials || color.name.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase()).join('').substring(0, 3);
+              ctx.fillText(initText, c * cw + cw/2, r * ch + ch/2);
             }
           }
         }

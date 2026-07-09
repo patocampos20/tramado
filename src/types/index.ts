@@ -39,6 +39,7 @@ export interface ColorEntry {
   name: string;        // e.g. "DMC 321" or "Rojo"
   symbol: string;      // single char shown on cell: 'X', '○', '▲', etc.
   symbolColor: string; // foreground color of symbol
+  initials?: string;   // 1 or 2 letters identifier
   count: number;       // how many cells use this color (computed)
 }
 
@@ -62,7 +63,8 @@ export interface CanvasConfig {
   bgColor: string;
   gaugeW: number;    // gauge: stitch width ratio (default 1.0)
   gaugeH: number;    // gauge: stitch height ratio (default 1.2 for crochet)
-  showSymbols: boolean;
+  cellRenderMode?: 'color' | 'initials' | 'symbols' | 'color+symbols'; // Multi-mode view
+  showSymbols: boolean; // Legacy/fallback
   showRowNumbers: boolean;
   showColNumbers: boolean;
   tipo_tejido: 'CIRCULAR' | 'PLANO_RS_FRENTE' | 'PLANO_WS_ESPALDA';

@@ -117,6 +117,7 @@ interface State {
   setGauge: (w: number, h: number) => void;
   toggleGrid: () => void;
   toggleSymbols: () => void;
+  setCellRenderMode: (mode: 'color' | 'initials' | 'symbols') => void;
   toggleMirrorH: () => void;
   toggleMirrorV: () => void;
   toggleRowNumbers: () => void;
@@ -533,6 +534,7 @@ export const useStore = create<State>()(
     setGauge: (w, h) => set(s => { s.project.canvas.gaugeW = w; s.project.canvas.gaugeH = h; }),
     toggleGrid: () => set(s => { s.project.canvas.showGrid = !s.project.canvas.showGrid; }),
     toggleSymbols: () => set(s => { s.project.canvas.showSymbols = !s.project.canvas.showSymbols; }),
+    setCellRenderMode: mode => set(s => { s.project.canvas.cellRenderMode = mode; }),
     toggleMirrorH: () => set(s => { s.project.canvas.mirrorH = !s.project.canvas.mirrorH; }),
     toggleMirrorV: () => set(s => { s.project.canvas.mirrorV = !s.project.canvas.mirrorV; }),
     toggleRowNumbers: () => set(s => { s.project.canvas.showRowNumbers = !s.project.canvas.showRowNumbers; }),

@@ -4,7 +4,7 @@
 ;  Generado para: Windows 10/11 x64
 ;  Desarrollador:  Patricio Campos
 ;  Idea General:   Carolina Campos
-;  Versión:        1.3.0
+;  Versión:        1.3.4
 ; =============================================================================
 ;
 ; INSTRUCCIONES DE USO
@@ -12,16 +12,16 @@
 ; 1. Instala Inno Setup 6 desde:  https://jrsoftware.org/isdl.php
 ; 2. Compila el ejecutable primero desde el proyecto Electron:
 ;       npm run build && npx electron-builder --win
-; 3. El ejecutable portable se generará en:  .\release\Tramado 1.3.0.exe
+; 3. El ejecutable portable se generará en:  .\release\Tramado 1.3.4.exe
 ;    (o también puedes copiar el contenido de .\release\win-unpacked\ si usas nsis)
 ; 4. Abre Inno Setup Compiler y carga este archivo .iss
 ; 5. Presiona F9 (Compile) o usa Build > Compile
-; 6. El instalador final se generará en:  .\installer_output\TramadoSetup_1.3.0.exe
+; 6. El instalador final se generará en:  .\installer_output\TramadoSetup_1.3.4.exe
 ; =============================================================================
 
 #define MyAppName      "Tramado"
 #define MyAppFullName  "Tramado — Pattern Studio"
-#define MyAppVersion   "1.3.0"
+#define MyAppVersion   "1.3.4"
 #define MyAppPublisher "Carolina Campos"
 #define MyAppURL       "https://tramado.app"
 #define MyAppExeName   "Tramado.exe"
@@ -103,7 +103,7 @@ Source: "{#MySourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdir
 
 ; Si prefieres usar el .exe portable en lugar de win-unpacked, descomenta la línea siguiente
 ; y comenta el Source de arriba:
-; Source: "release\Tramado 1.3.0.exe"; DestDir: "{app}"; DestName: "{#MyAppExeName}"; Flags: ignoreversion
+; Source: "release\Tramado 1.3.4.exe"; DestDir: "{app}"; DestName: "{#MyAppExeName}"; Flags: ignoreversion
 
 [Icons]
 ; Ícono en Menú de Inicio

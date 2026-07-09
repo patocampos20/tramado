@@ -163,6 +163,61 @@ export const PrintView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const lines = [];
     const { tipo_tejido, direccion_filas, direccion_columnas, startRow } = p.canvas;
     
+    if (p.craft === 'crochet_c2c') {
+      let displayR = 1;
+      const W = p.canvas.cols;
+      const H = p.canvas.rows;
+      let prevCount = 0;
+
+      for (let d = 0; d < W + H - 1; d++) {
+        const counts: { color: string, count: number }[] = [];
+        let hasColor = false;
+        let blockCount = 0;
+
+        for (let i = 0; i <= d; i++) {
+          let cp = (d % 2 === 0) ? i : (d - i);
+          let rp = (d % 2 === 0) ? (d - i) : i;
+
+          if (cp < W && rp < H) {
+            const c = W - 1 - cp;
+            const r = H - 1 - rp;
+
+            const colorId = getEffectiveCellColor(c, r);
+            if (colorId) {
+              hasColor = true;
+              const colorObj = p.colors.find(x => x.id === colorId);
+              const colorName = colorObj?.name || 'Color';
+              if (counts.length > 0 && counts[counts.length - 1].color === colorName) {
+                counts[counts.length - 1].count++;
+              } else {
+                counts.push({ color: colorName, count: 1 });
+              }
+            }
+            blockCount++;
+          }
+        }
+
+        if (hasColor) {
+          let prefix = "";
+          if (prevCount > 0) {
+            if (blockCount > prevCount) prefix = `(Aumento) `;
+            else if (blockCount < prevCount) prefix = `(Disminución) `;
+          }
+          prevCount = blockCount;
+
+          lines.push({
+            row: displayR,
+            dir: (d % 2 === 0) ? '↗' : '↙',
+            prefix,
+            counts: counts.map(x => `${x.color} ${x.count} bloques`).join(', ')
+          });
+          displayR++;
+        }
+      }
+      return lines;
+    }
+    
+    
     const goUp = direccion_filas === 'BOTTOM_TO_TOP';
     const startIdx = goUp ? p.canvas.rows - 1 : 0;
     const endIdx = goUp ? -1 : p.canvas.rows;
@@ -174,7 +229,6 @@ export const PrintView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const baseStitch = p.craft === 'knitting' ? 'pto derecho (k)' : 
                        ['crochet_colorwork', 'crochet_filet', 'crochet_mosaic', 'crochet_tunisian'].includes(p.craft) ? 'pto bajo (pb)' : 
-                       p.craft === 'crochet_c2c' ? 'bloque C2C (3pa)' :
                        ['cross_stitch', 'embroidery'].includes(p.craft) ? 'cruces' : 'puntos';
 
     for (let r = startIdx; r !== endIdx; r += step) {
@@ -320,7 +374,7 @@ export const PrintView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <div style={{ textAlign: 'center', marginBottom: 40, marginTop: 30 }}>
             <h1 style={{ fontSize: 36, margin: 0 }}>{p.name}</h1>
             <p style={{ fontSize: 16, color: '#666', marginTop: 8 }}>
-              Patrón de Diseño Textil — Tramado Pattern Studio v1.3.0
+              Patrón de Diseño Textil — Tramado Pattern Studio v1.3.4
             </p>
           </div>
 
